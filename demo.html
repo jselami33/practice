@@ -1,0 +1,1397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CodeGuard AI – Interactive Vulnerability Demo</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --red: #c0151a;
+      --red-bright: #ff2233;
+      --red-glow: rgba(192,21,26,0.45);
+      --red-dim: rgba(192,21,26,0.15);
+      --orange: #ff8c00;
+      --orange-bright: #ffa500;
+      --orange-glow: rgba(255, 140, 0, 0.4);
+      --orange-dim: rgba(255, 140, 0, 0.15);
+      --green: #4ade80;
+      --green-dim: rgba(74, 222, 128, 0.15);
+      --black: #080608;
+      --black2: #100c0e;
+      --black3: #1a1014;
+      --vs-dark: #1e1e1e;
+      --vs-sidebar: #252526;
+      --vs-activity: #333333;
+      --vs-tab: #2d2d2d;
+      --white: #f0e8e8;
+      --muted: #7a6060;
+      --vs-muted: #858585;
+      --border: rgba(192,21,26,0.22);
+      --vs-border: #3c3c3c;
+      --accent-blue: #007acc;
+      --kw: #569cd6;
+      --fn: #dcdcaa;
+      --str: #ce9178;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    body {
+      background-color: var(--vs-dark);
+      color: var(--white);
+      font-family: 'Syne', sans-serif;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* HEADER */
+    .demo-header {
+      background: linear-gradient(135deg, rgba(8,6,8,0.95) 0%, rgba(16,12,14,0.85) 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      backdrop-filter: blur(8px);
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .header-logo {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.4rem;
+      letter-spacing: 0.1em;
+      color: var(--white);
+    }
+
+    .header-logo span {
+      color: var(--red-bright);
+    }
+
+    .demo-mode {
+      background: rgba(192, 21, 26, 0.15);
+      border: 1px solid var(--red);
+      border-radius: 4px;
+      padding: 6px 12px;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--red-bright);
+      font-weight: 600;
+    }
+
+    .header-right {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .status-indicator {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--vs-muted);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+    }
+
+    .status-dot.scanning {
+      background: var(--red-bright);
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    /* MAIN CONTAINER */
+    .demo-container {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* ACTIVITY BAR */
+    .activity-bar {
+      width: 50px;
+      background-color: var(--vs-activity);
+      border-right: 1px solid var(--vs-border);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding-top: 12px;
+      gap: 16px;
+    }
+
+    .activity-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background 0.2s;
+      font-size: 16px;
+    }
+
+    .activity-icon:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .activity-icon.active {
+      background-color: var(--accent-blue);
+      color: white;
+    }
+
+    /* SIDEBAR */
+    .sidebar {
+      width: 280px;
+      background-color: var(--vs-sidebar);
+      border-right: 1px solid var(--vs-border);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+
+    .sidebar-section {
+      padding: 16px;
+      border-bottom: 1px solid var(--vs-border);
+    }
+
+    .sidebar-section-title {
+      font-size: 11px;
+      text-transform: uppercase;
+      color: var(--vs-muted);
+      margin-bottom: 12px;
+      letter-spacing: 0.08em;
+      font-weight: 600;
+    }
+
+    .file-tree {
+      font-size: 12px;
+      color: var(--white);
+      line-height: 1.8;
+    }
+
+    .file-item {
+      cursor: pointer;
+      padding: 4px 0;
+      transition: color 0.2s;
+    }
+
+    .file-item:hover {
+      color: var(--accent-blue);
+    }
+
+    .file-item.active {
+      color: var(--accent-blue);
+      font-weight: 600;
+    }
+
+    .folder-icon {
+      color: var(--fn);
+      margin-right: 6px;
+    }
+
+    .file-icon {
+      color: var(--str);
+      margin-right: 6px;
+      margin-left: 16px;
+    }
+
+    /* CODEGUARD EXTENSION PANEL */
+    .extension-panel {
+      margin: 16px;
+      background: linear-gradient(135deg, rgba(192, 21, 26, 0.12) 0%, rgba(192, 21, 26, 0.06) 100%);
+      border: 1px solid var(--red-dim);
+      border-radius: 8px;
+      padding: 16px;
+      margin-top: auto;
+    }
+
+    .extension-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .extension-icon {
+      font-size: 16px;
+    }
+
+    .extension-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--white);
+      letter-spacing: 0.05em;
+    }
+
+    .extension-badge {
+      margin-left: auto;
+      background: var(--red-bright);
+      color: white;
+      font-size: 10px;
+      padding: 3px 8px;
+      border-radius: 3px;
+      font-weight: 700;
+    }
+
+    .extension-body {
+      font-size: 12px;
+      color: var(--vs-muted);
+      margin-bottom: 14px;
+      line-height: 1.6;
+    }
+
+    .scan-status {
+      background: rgba(0, 0, 0, 0.3);
+      border-left: 2px solid var(--red-bright);
+      padding: 10px;
+      border-radius: 4px;
+      margin-bottom: 12px;
+      font-size: 11px;
+    }
+
+    .scan-status.success {
+      border-left-color: var(--green);
+      background: rgba(74, 222, 128, 0.1);
+    }
+
+    .scan-status-text {
+      color: var(--white);
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .scan-status-sub {
+      color: var(--vs-muted);
+      font-size: 10px;
+    }
+
+    .btn-scan {
+      background-color: var(--accent-blue);
+      color: white;
+      border: none;
+      padding: 10px 14px;
+      border-radius: 5px;
+      cursor: pointer;
+      width: 100%;
+      font-weight: 600;
+      font-size: 12px;
+      transition: background 0.2s;
+      letter-spacing: 0.05em;
+      margin-bottom: 8px;
+    }
+
+    .btn-scan:hover {
+      background-color: #005f9e;
+    }
+
+    .btn-scan.scanning {
+      background-color: var(--red-bright);
+    }
+
+    .btn-fix-global {
+      background-color: var(--green);
+      color: #000;
+      border: none;
+      padding: 10px 14px;
+      border-radius: 5px;
+      cursor: pointer;
+      width: 100%;
+      font-weight: 600;
+      font-size: 12px;
+      transition: background 0.2s;
+      letter-spacing: 0.05em;
+    }
+
+    .btn-fix-global:hover {
+      background-color: #3bbf6e;
+    }
+
+    .btn-fix-global:disabled {
+      opacity: 0.5;
+      cursor: default;
+      background-color: var(--vs-muted);
+    }
+
+    /* EDITOR AREA */
+    .editor-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .tabs {
+      display: flex;
+      background-color: var(--vs-tab);
+      height: 35px;
+      border-bottom: 1px solid var(--vs-border);
+      align-items: center;
+    }
+
+    .tab {
+      background-color: var(--vs-tab);
+      color: var(--vs-muted);
+      padding: 8px 16px;
+      font-size: 12px;
+      border-right: 1px solid var(--vs-border);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: color 0.2s, border-color 0.2s;
+    }
+
+    .tab.active {
+      color: white;
+      background-color: var(--vs-dark);
+      border-bottom-color: var(--accent-blue);
+    }
+
+    /* CODE CONTAINER */
+    .code-container {
+      flex: 1;
+      padding: 16px 0;
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 13px;
+      line-height: 1.6;
+      overflow-y: auto;
+      overflow-x: auto;
+      background-color: var(--vs-dark);
+      position: relative;
+    }
+
+    .line {
+      display: flex;
+      white-space: pre-wrap;
+      position: relative;
+    }
+
+    .ln {
+      width: 50px;
+      text-align: right;
+      padding-right: 15px;
+      padding-left: 10px;
+      color: var(--vs-muted);
+      user-select: none;
+      flex-shrink: 0;
+    }
+
+    .code {
+      flex: 1;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    /* SYNTAX HIGHLIGHTING */
+    .c-kw { color: var(--kw); }
+    .c-fn { color: var(--fn); }
+    .c-str { color: var(--str); }
+    .c-comment { color: #6a9955; font-style: italic; }
+    .c-nm { color: #9cdcfe; }
+
+    /* VULNERABILITY HIGHLIGHTING */
+    .vuln-line {
+      border-left: 3px solid;
+      margin-left: -3px;
+      padding-left: 3px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+
+    .vuln-line.vuln-critical {
+      background-color: rgba(192, 21, 26, 0.15);
+      border-left-color: var(--red-bright);
+    }
+
+    .vuln-line.vuln-critical:hover {
+      background-color: rgba(192, 21, 26, 0.25);
+    }
+
+    .vuln-line.vuln-high {
+      background-color: rgba(192, 21, 26, 0.12);
+      border-left-color: var(--red);
+    }
+
+    .vuln-line.vuln-high:hover {
+      background-color: rgba(192, 21, 26, 0.22);
+    }
+
+    .vuln-line.vuln-medium {
+      background-color: var(--orange-dim);
+      border-left-color: var(--orange-bright);
+    }
+
+    .vuln-line.vuln-medium:hover {
+      background-color: rgba(255, 140, 0, 0.25);
+    }
+
+    .fixed-line {
+      background-color: var(--green-dim);
+      border-left: 3px solid var(--green);
+      margin-left: -3px;
+      padding-left: 3px;
+    }
+
+    /* VULNERABILITY POPUP */
+    .vuln-popup {
+      position: fixed;
+      background: linear-gradient(135deg, #160a0c 0%, #0d0608 100%);
+      border: 1px solid var(--red);
+      padding: 24px 28px;
+      width: 360px;
+      box-shadow: 0 0 60px rgba(192, 21, 26, 0.3), 0 20px 60px rgba(0, 0, 0, 0.5);
+      z-index: 1000;
+      pointer-events: auto;
+      font-family: 'Syne', sans-serif;
+      animation: popIn 0.35s cubic-bezier(.17,.67,.35,1.2) forwards;
+    }
+
+    @keyframes popIn {
+      from {
+        opacity: 0;
+        transform: scale(0.95) translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+      }
+    }
+
+    .popup-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 18px;
+    }
+
+    .popup-icon {
+      font-size: 18px;
+      margin-right: 0;
+    }
+
+    .popup-title-wrapper {
+      display: flex;
+      gap: 12px;
+      flex: 1;
+      align-items: center;
+    }
+
+    .popup-title {
+      font-family: 'DM Mono', monospace;
+      font-weight: 600;
+      color: var(--red-bright);
+      font-size: 0.7rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+    }
+
+    .popup-severity {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.6rem;
+      letter-spacing: 0.1em;
+      color: var(--red-bright);
+      border: 1px solid var(--red);
+      padding: 2px 8px;
+      white-space: nowrap;
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .popup-close {
+      background: none;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 18px;
+      padding: 0;
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: color 0.2s;
+    }
+
+    .popup-close:hover {
+      color: var(--red-bright);
+    }
+
+    .popup-section {
+      margin-bottom: 14px;
+    }
+
+    .popup-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 8px;
+      letter-spacing: 0.15em;
+      font-weight: 600;
+    }
+
+    .popup-detail {
+      font-size: 0.9rem;
+      color: var(--white);
+      line-height: 1.6;
+    }
+
+    .impact-value {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.8rem;
+      color: var(--red-bright);
+      letter-spacing: 0.05em;
+      text-shadow: 0 0 30px var(--red-glow);
+    }
+
+    .risk-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .risk-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--muted);
+    }
+
+    .risk-bar-wrap {
+      width: 55%;
+      height: 5px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 2px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .risk-bar {
+      height: 100%;
+      background: var(--red-bright);
+      box-shadow: 0 0 10px var(--red-glow);
+      border-radius: 2px;
+      transition: width 0.8s cubic-bezier(.4, 0, .2, 1);
+      width: 0;
+    }
+
+    .risk-val {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--white);
+    }
+
+    .popup-impact {
+      margin-top: 18px;
+      padding-top: 18px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .fix-single {
+      width: 100%;
+      margin-top: 16px;
+      background: var(--red);
+      border: none;
+      color: var(--white);
+      font-family: 'DM Mono', monospace;
+      font-size: 0.72rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 12px;
+      cursor: pointer;
+      transition: background 0.2s, box-shadow 0.2s;
+    }
+
+    .fix-single:hover {
+      background: var(--red-bright);
+      box-shadow: 0 0 30px var(--red-glow);
+    }
+
+    /* SCROLLBAR */
+    ::-webkit-scrollbar {
+      width: 10px;
+      height: 10px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 5px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.25);
+    }
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="demo-header">
+  <div class="header-left">
+    <div class="header-logo">Code<span>Guard</span></div>
+    <div class="demo-mode">🎬 Interactive Demo</div>
+  </div>
+  <div class="header-right">
+    <div class="status-indicator">
+      <div class="status-dot"></div>
+      <span>Ready to scan</span>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN CONTAINER -->
+<div class="demo-container">
+  <!-- ACTIVITY BAR -->
+  <div class="activity-bar">
+    <div class="activity-icon active" title="Explorer">📁</div>
+    <div class="activity-icon" title="Search">🔍</div>
+    <div class="activity-icon" title="Source Control">⎇</div>
+  </div>
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <!-- FILE EXPLORER -->
+    <div class="sidebar-section">
+      <div class="sidebar-section-title">Explorer</div>
+      <div class="file-tree">
+        <div class="file-item" onclick="selectFile(this, 'app.py')">
+          <span class="folder-icon">📂</span> project
+        </div>
+        <div class="file-item active" onclick="selectFile(this, 'app.py')">
+          <span class="file-icon">🐍</span> app.py
+        </div>
+        <div class="file-item" onclick="selectFile(this, 'config.py')">
+          <span class="file-icon">⚙️</span> config.py
+        </div>
+        <div class="file-item" onclick="selectFile(this, 'database.py')">
+          <span class="file-icon">🗄️</span> database.py
+        </div>
+        <div class="file-item" onclick="selectFile(this, 'utils.py')">
+          <span class="file-icon">🛠️</span> utils.py
+        </div>
+      </div>
+    </div>
+
+    <!-- CODEGUARD EXTENSION -->
+    <div class="extension-panel">
+      <div class="extension-header">
+        <div class="extension-icon">🛡️</div>
+        <div class="extension-title">CodeGuard AI</div>
+        <div class="extension-badge">BETA</div>
+      </div>
+      
+      <div id="scanStatus" class="scan-status" style="display: none;">
+        <div class="scan-status-text">✓ Scan Complete</div>
+        <div class="scan-status-sub" id="vulnCount">6 vulnerabilities found</div>
+      </div>
+
+      <div class="extension-body">
+        AI-powered code security scanner. Detects vulnerabilities with financial impact analysis.
+      </div>
+
+      <button class="btn-scan" id="scanBtn" onclick="runScan()">▶ Run Scan</button>
+      <button class="btn-fix-global" id="globalFixBtn" onclick="applyAllFixes()" disabled>✨ Fix All</button>
+    </div>
+  </div>
+
+  <!-- EDITOR AREA -->
+  <div class="editor-area">
+    <div class="tabs">
+      <div class="tab active" id="appPyTab">
+        <span>📄</span> app.py
+        <span style="margin-left: auto; color: var(--red-bright);">●</span>
+      </div>
+    </div>
+
+    <div class="code-container" id="codeContainer"></div>
+  </div>
+</div>
+
+<script>
+  // VULNERABLE CODE - COMPREHENSIVE EXAMPLE WITH MULTIPLE VULNS
+  const vulnerableCode = `import sqlite3
+import os
+import subprocess
+from flask import Flask, request, session, jsonify
+
+app = Flask(__name__)
+app.secret_key = "hardcoded_secret_key_12345"  # VULN: Hardcoded Secret
+
+# Database connection
+DATABASE = 'users.db'
+
+def get_user_by_username(username):
+    """Fetch user from database (VULNERABLE TO SQL INJECTION)"""
+    conn = sqlite3.connect(DATABASE)
+    # VULN: SQL Injection - f-string concatenation
+    query = f"SELECT * FROM users WHERE username = '{username}'"
+    cursor = conn.execute(query)
+    return cursor.fetchone()
+
+def execute_system_command(user_input):
+    """Execute shell command based on user input"""
+    # VULN: Command Injection - os.system with unsanitized input
+    os.system(f"echo Processing user: {user_input}")
+    return "Command executed"
+
+@app.route('/login', methods=['POST'])
+def login():
+    """User authentication endpoint"""
+    username = request.form.get('username')
+    password = request.form.get('password')
+    
+    # VULN: SQL Injection in authentication
+    conn = sqlite3.connect(DATABASE)
+    query = f"SELECT id, name FROM users WHERE username='{username}' AND password='{password}'"
+    result = conn.execute(query).fetchone()
+    
+    if result:
+        session['user_id'] = result[0]
+        session['username'] = username
+        return jsonify({"status": "success"}), 200
+    return jsonify({"status": "failed"}), 401
+
+@app.route('/process', methods=['POST'])
+def process_data():
+    """Data processing endpoint"""
+    user_command = request.form.get('command')
+    
+    # VULN: Command Injection - subprocess with shell=True
+    try:
+        output = subprocess.run(f"python process.py {user_command}", shell=True, capture_output=True)
+        return output.stdout.decode()
+    except Exception as e:
+        return str(e)
+
+@app.route('/export', methods=['GET'])
+def export_data():
+    """Export user data endpoint"""
+    format_type = request.args.get('format', 'json')
+    
+    # VULN: Hardcoded API Key
+    API_KEY = "sk-proj-abc123xyz789-prod-key"
+    
+    # Data export logic
+    conn = sqlite3.connect(DATABASE)
+    users = conn.execute("SELECT * FROM users").fetchall()
+    return jsonify({"data": users, "key": API_KEY})
+
+@app.route('/admin/settings', methods=['POST'])
+def admin_settings():
+    """Admin configuration endpoint"""
+    # VULN: Debug mode enabled in production
+    app.run(debug=True, host='0.0.0.0', port=5000)
+    
+    config = {
+        'max_users': request.form.get('max_users'),
+        'timeout': request.form.get('timeout')
+    }
+    return jsonify({"status": "updated"})
+
+def batch_update_users(updates):
+    """Batch update user records"""
+    conn = sqlite3.connect(DATABASE)
+    for update in updates:
+        user_id = update['id']
+        new_name = update['name']
+        # VULN: SQL Injection via loop variable
+        query = f"UPDATE users SET name = '{new_name}' WHERE id = {user_id}"
+        conn.execute(query)
+    conn.commit()
+
+if __name__ == '__main__':
+    app.run()`;
+
+  // Vulnerable code divided into lines for processing
+  let currentCode = vulnerableCode;
+  let vulnerabilities = [];
+  let currentLines = currentCode.split('\n');
+  let popupElement = null;
+  let hideTimeout = null;
+
+  // VULNERABILITY DATABASE
+  const vulnDatabase = {
+    'hardcoded-secret-key': {
+      name: 'Hardcoded Secret Key',
+      severity: 'CRITICAL',
+      impact: '$1.8M',
+      risk: 9.5,
+      type: 'Security',
+      cwe: 'CWE-798',
+      cvss: '9.8',
+      description: 'Sensitive credentials stored in source code can be exposed via version control or breach. Attacker gains complete session control.'
+    },
+    'sql-injection-1': {
+      name: 'SQL Injection',
+      severity: 'CRITICAL',
+      impact: '$2.3M',
+      risk: 9.8,
+      type: 'Injection',
+      cwe: 'CWE-89',
+      cvss: '9.9',
+      description: 'User input directly concatenated into SQL query. Attacker can extract all database records, modify data, or execute system commands.'
+    },
+    'sql-injection-2': {
+      name: 'SQL Injection',
+      severity: 'CRITICAL',
+      impact: '$2.3M',
+      risk: 9.8,
+      type: 'Injection',
+      cwe: 'CWE-89',
+      cvss: '9.9',
+      description: 'Unsanitized user credentials in SQL query. Complete database compromise risk. Authentication bypass possible.'
+    },
+    'sql-injection-3': {
+      name: 'SQL Injection',
+      severity: 'CRITICAL',
+      impact: '$2.3M',
+      risk: 9.8,
+      type: 'Injection',
+      cwe: 'CWE-89',
+      cvss: '9.9',
+      description: 'Loop variable directly in SQL. Batch operations vulnerable to injection attacks via name parameter.'
+    },
+    'command-injection': {
+      name: 'Command Injection',
+      severity: 'CRITICAL',
+      impact: '$1.9M',
+      risk: 9.6,
+      type: 'Injection',
+      cwe: 'CWE-78',
+      cvss: '9.8',
+      description: 'User input passed to shell command. Attacker can execute arbitrary system commands with application privileges.'
+    },
+    'cmd-injection-subprocess': {
+      name: 'Command Injection',
+      severity: 'CRITICAL',
+      impact: '$1.9M',
+      risk: 9.6,
+      type: 'Injection',
+      cwe: 'CWE-78',
+      cvss: '9.8',
+      description: 'shell=True allows command injection. Attacker gains system-level code execution and full server compromise.'
+    },
+    'hardcoded-api-key': {
+      name: 'Hardcoded API Key',
+      severity: 'HIGH',
+      impact: '$1.2M',
+      risk: 8.8,
+      type: 'Security',
+      cwe: 'CWE-798',
+      cvss: '9.1',
+      description: 'Production API key exposed in source code. Unauthorized access to external services and potential financial charges.'
+    },
+    'debug-mode': {
+      name: 'Debug Mode Enabled',
+      severity: 'MEDIUM',
+      impact: '$450K',
+      risk: 6.5,
+      type: 'Information Exposure',
+      cwe: 'CWE-215',
+      cvss: '7.3',
+      description: 'Flask debug mode exposes stack traces, environment variables, and allows remote code execution through the interactive debugger.'
+    }
+  };
+
+  // DETECT VULNERABILITIES
+  function detectVulnerabilities(codeLines) {
+    const vulns = [];
+    
+    for (let i = 0; i < codeLines.length; i++) {
+      const line = codeLines[i];
+      const lineNum = i + 1;
+
+      // Hardcoded secret key in app.secret_key
+      if (line.includes('app.secret_key = ') && line.includes('"hardcoded')) {
+        vulns.push({
+          line: lineNum,
+          type: 'hardcoded-secret-key',
+          id: 'secret-key-' + lineNum,
+          severity: 'CRITICAL'
+        });
+      }
+
+      // SQL Injection - f-string with username
+      if ((line.includes('f"SELECT') || line.includes("f'SELECT")) && line.includes('{username')) {
+        vulns.push({
+          line: lineNum,
+          type: 'sql-injection-1',
+          id: 'sqli-1-' + lineNum,
+          severity: 'CRITICAL'
+        });
+      }
+
+      // SQL Injection - f-string with username AND password
+      if ((line.includes('f"SELECT') || line.includes("f'SELECT")) && 
+          (line.includes('{username') || line.includes('{password'))) {
+        if (!vulns.some(v => v.line === lineNum && v.type === 'sql-injection-1')) {
+          vulns.push({
+            line: lineNum,
+            type: 'sql-injection-2',
+            id: 'sqli-2-' + lineNum,
+            severity: 'CRITICAL'
+          });
+        }
+      }
+
+      // SQL Injection in UPDATE statement
+      if (line.includes('f"UPDATE users SET name') && line.includes('{new_name}')) {
+        vulns.push({
+          line: lineNum,
+          type: 'sql-injection-3',
+          id: 'sqli-3-' + lineNum,
+          severity: 'CRITICAL'
+        });
+      }
+
+      // Command Injection - os.system with f-string
+      if (line.includes('os.system') && (line.includes('f"') || line.includes("f'"))) {
+        vulns.push({
+          line: lineNum,
+          type: 'command-injection',
+          id: 'cmd-1-' + lineNum,
+          severity: 'CRITICAL'
+        });
+      }
+
+      // Command Injection - subprocess with shell=True
+      if (line.includes('subprocess.run') && line.includes('shell=True')) {
+        vulns.push({
+          line: lineNum,
+          type: 'cmd-injection-subprocess',
+          id: 'cmd-2-' + lineNum,
+          severity: 'CRITICAL'
+        });
+      }
+
+      // Hardcoded API Key
+      if ((line.includes('API_KEY = "') || line.includes("API_KEY = '")) && 
+          line.includes('sk-proj')) {
+        vulns.push({
+          line: lineNum,
+          type: 'hardcoded-api-key',
+          id: 'api-key-' + lineNum,
+          severity: 'HIGH'
+        });
+      }
+
+      // Debug mode enabled
+      if (line.includes('debug=True') && line.includes('app.run')) {
+        vulns.push({
+          line: lineNum,
+          type: 'debug-mode',
+          id: 'debug-' + lineNum,
+          severity: 'MEDIUM'
+        });
+      }
+    }
+
+    return vulns;
+  }
+
+  // SYNTAX HIGHLIGHTING
+  function highlightSyntax(line) {
+    let html = line.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    
+    // Keywords
+    html = html.replace(
+      /\b(import|from|def|if|else|elif|return|True|False|None|and|or|not|for|in|with|as|try|except|finally|class|while)\b/g,
+      '<span class="c-kw">$1</span>'
+    );
+    
+    // Functions and identifiers
+    html = html.replace(
+      /\b(flask|sqlite3|os|subprocess|request|session|jsonify|app|execute|connect|run)\b/g,
+      '<span class="c-fn">$1</span>'
+    );
+    
+    // Strings
+    html = html.replace(/(["'])(?:(?=(\\?))\2.)*?\1/g, '<span class="c-str">$&</span>');
+    
+    // Comments
+    html = html.replace(/(#.*)$/g, '<span class="c-comment">$1</span>');
+    
+    return html;
+  }
+
+  // RENDER CODE
+  function renderCode() {
+    const container = document.getElementById('codeContainer');
+    container.innerHTML = '';
+    
+    const vulnMap = {};
+    vulnerabilities.forEach(v => {
+      if (!vulnMap[v.line]) {
+        vulnMap[v.line] = v;
+      }
+    });
+    
+    currentLines.forEach((line, idx) => {
+      const lineNum = idx + 1;
+      const vuln = vulnMap[lineNum];
+      
+      const lineDiv = document.createElement('div');
+      lineDiv.className = 'line';
+      
+      if (vuln) {
+        lineDiv.classList.add('vuln-line');
+        // Add severity-based class
+        if (vuln.severity === 'CRITICAL') {
+          lineDiv.classList.add('vuln-critical');
+        } else if (vuln.severity === 'HIGH') {
+          lineDiv.classList.add('vuln-high');
+        } else if (vuln.severity === 'MEDIUM') {
+          lineDiv.classList.add('vuln-medium');
+        }
+      }
+      
+      lineDiv.setAttribute('data-line', lineNum);
+      
+      const numSpan = document.createElement('span');
+      numSpan.className = 'ln';
+      numSpan.innerText = lineNum;
+      
+      const codeSpan = document.createElement('span');
+      codeSpan.className = 'code';
+      codeSpan.innerHTML = highlightSyntax(line);
+      
+      lineDiv.appendChild(numSpan);
+      lineDiv.appendChild(codeSpan);
+      
+      if (vuln) {
+        lineDiv.addEventListener('mouseenter', (e) => onLineMouseEnter(e, lineNum));
+        lineDiv.addEventListener('mouseleave', () => onLineMouseLeave());
+      }
+      
+      container.appendChild(lineDiv);
+    });
+  }
+
+  // POPUP HANDLERS
+  function onLineMouseEnter(event, lineNum) {
+    if (hideTimeout) clearTimeout(hideTimeout);
+    if (popupElement) hidePopup();
+    showPopupForLine(event, lineNum);
+  }
+
+  function onLineMouseLeave() {
+    hideTimeout = setTimeout(() => {
+      if (popupElement && !popupElement.matches(':hover')) {
+        hidePopup();
+      }
+    }, 150);
+  }
+
+  function showPopupForLine(event, lineNum) {
+    const vuln = vulnerabilities.find(v => v.line === lineNum);
+    if (!vuln) return;
+    
+    const vulnInfo = vulnDatabase[vuln.type];
+    const lineElem = event.currentTarget;
+    const rect = lineElem.getBoundingClientRect();
+    
+    popupElement = document.createElement('div');
+    popupElement.className = 'vuln-popup';
+    
+    // Apply color based on severity
+    if (vulnInfo.severity === 'CRITICAL') {
+      popupElement.style.borderColor = 'var(--red)';
+    } else if (vulnInfo.severity === 'MEDIUM') {
+      popupElement.style.borderColor = 'var(--orange)';
+    }
+    
+    // Position popup - slightly higher than before
+    const top = Math.max(80, Math.min(rect.top + window.scrollY - 100, window.innerHeight - 350));
+    const left = Math.min(rect.right + 20, window.innerWidth - 380);
+    
+    popupElement.style.top = top + 'px';
+    popupElement.style.left = left + 'px';
+    
+    popupElement.innerHTML = `
+      <div class="popup-header">
+        <div class="popup-title-wrapper">
+          <div class="popup-icon">⚠️</div>
+          <div class="popup-title">${vulnInfo.name}</div>
+          <div class="popup-severity">${vulnInfo.severity}</div>
+        </div>
+        <button class="popup-close">✕</button>
+      </div>
+      
+      <div class="popup-section">
+        <div class="popup-detail">${vulnInfo.description}</div>
+      </div>
+
+      <div class="risk-row">
+        <div class="risk-label">Vulnerability Type</div>
+        <div class="risk-val">${vulnInfo.type}</div>
+      </div>
+
+      <div class="risk-row">
+        <div class="risk-label">CWE</div>
+        <div class="risk-val">${vulnInfo.cwe}</div>
+      </div>
+
+      <div class="risk-row">
+        <div class="risk-label">CVSS Score</div>
+        <div class="risk-val">${vulnInfo.cvss}/10</div>
+      </div>
+
+      <div class="risk-row">
+        <div class="risk-label">Risk Score</div>
+        <div class="risk-val">${vulnInfo.risk}/10</div>
+      </div>
+      <div class="risk-bar-wrap">
+        <div class="risk-bar" style="width: ${(vulnInfo.risk/10)*100}%"></div>
+      </div>
+      
+      <div class="popup-impact">
+        <div class="popup-label">Financial Impact</div>
+        <div class="impact-value">${vulnInfo.impact}</div>
+      </div>
+      
+      <button class="fix-single" data-line="${vuln.line}" data-type="${vuln.type}">🔧 Fix Vulnerability</button>
+    `;
+    
+    document.body.appendChild(popupElement);
+    
+    popupElement.addEventListener('mouseenter', () => {
+      if (hideTimeout) clearTimeout(hideTimeout);
+    });
+    popupElement.addEventListener('mouseleave', () => {
+      hideTimeout = setTimeout(() => hidePopup(), 150);
+    });
+    
+    popupElement.querySelector('.popup-close').addEventListener('click', hidePopup);
+    popupElement.querySelector('.fix-single').addEventListener('click', (e) => {
+      e.stopPropagation();
+      applySingleFix(parseInt(e.target.dataset.line), e.target.dataset.type);
+      hidePopup();
+    });
+  }
+
+  function hidePopup() {
+    if (popupElement) {
+      popupElement.remove();
+      popupElement = null;
+    }
+    if (hideTimeout) clearTimeout(hideTimeout);
+  }
+
+  // FIXES
+  function fixSQLInjection(lines, startLineIdx) {
+    let newLines = [...lines];
+    const line = newLines[startLineIdx];
+    
+    if (line.includes('f"SELECT')) {
+      newLines[startLineIdx] = line.replace(
+        /f"SELECT.*?"/, 
+        '"SELECT * FROM users WHERE username = ? AND password = ?"'
+      );
+    } else if (line.includes('f"UPDATE')) {
+      newLines[startLineIdx] = line.replace(
+        /f"UPDATE users SET name = '{new_name}'.*?"/,
+        '"UPDATE users SET name = ? WHERE id = ?"'
+      );
+    }
+    
+    return newLines;
+  }
+
+  function fixCommandInjection(lines, startLineIdx) {
+    let newLines = [...lines];
+    const line = newLines[startLineIdx];
+    
+    if (line.includes('os.system')) {
+      newLines[startLineIdx] = line.replace(/os.system\(.*?\)/, 'subprocess.run(["echo", user_input], capture_output=True)');
+    } else if (line.includes('shell=True')) {
+      newLines[startLineIdx] = line.replace(/shell=True/, 'shell=False');
+    }
+    
+    return newLines;
+  }
+
+  function fixHardcodedSecret(lines, startLineIdx) {
+    let newLines = [...lines];
+    
+    if (newLines[startLineIdx].includes('app.secret_key')) {
+      newLines[startLineIdx] = newLines[startLineIdx].replace(
+        /app\.secret_key = .*/, 
+        'app.secret_key = os.environ.get("SECRET_KEY")'
+      );
+    } else if (newLines[startLineIdx].includes('API_KEY')) {
+      newLines[startLineIdx] = newLines[startLineIdx].replace(
+        /API_KEY = .*/, 
+        'API_KEY = os.environ.get("API_KEY")'
+      );
+    }
+    
+    return newLines;
+  }
+
+  function fixDebugMode(lines, startLineIdx) {
+    let newLines = [...lines];
+    newLines[startLineIdx] = newLines[startLineIdx].replace(/debug=True/, 'debug=False');
+    return newLines;
+  }
+
+  function applySingleFix(lineNum, type) {
+    const lineIdx = lineNum - 1;
+    let newLines = [...currentLines];
+    
+    switch (type) {
+      case 'sql-injection-1':
+      case 'sql-injection-2':
+      case 'sql-injection-3':
+        newLines = fixSQLInjection(newLines, lineIdx);
+        break;
+      case 'command-injection':
+      case 'cmd-injection-subprocess':
+        newLines = fixCommandInjection(newLines, lineIdx);
+        break;
+      case 'hardcoded-secret-key':
+      case 'hardcoded-api-key':
+        newLines = fixHardcodedSecret(newLines, lineIdx);
+        break;
+      case 'debug-mode':
+        newLines = fixDebugMode(newLines, lineIdx);
+        break;
+    }
+    
+    currentLines = newLines;
+    currentCode = currentLines.join('\n');
+    vulnerabilities = detectVulnerabilities(currentLines);
+    renderCode();
+    updateGlobalFixButton();
+  }
+
+  function applyAllFixes() {
+    let newLines = [...currentLines];
+    
+    vulnerabilities.forEach(v => {
+      const idx = v.line - 1;
+      switch (v.type) {
+        case 'sql-injection-1':
+        case 'sql-injection-2':
+        case 'sql-injection-3':
+          newLines = fixSQLInjection(newLines, idx);
+          break;
+        case 'command-injection':
+        case 'cmd-injection-subprocess':
+          newLines = fixCommandInjection(newLines, idx);
+          break;
+        case 'hardcoded-secret-key':
+        case 'hardcoded-api-key':
+          newLines = fixHardcodedSecret(newLines, idx);
+          break;
+        case 'debug-mode':
+          newLines = fixDebugMode(newLines, idx);
+          break;
+      }
+    });
+    
+    currentLines = newLines;
+    currentCode = currentLines.join('\n');
+    vulnerabilities = detectVulnerabilities(currentLines);
+    renderCode();
+    updateGlobalFixButton();
+  }
+
+  function updateGlobalFixButton() {
+    const btn = document.getElementById('globalFixBtn');
+    if (vulnerabilities.length === 0) {
+      btn.disabled = true;
+      btn.innerText = '✓ All Secured';
+    } else {
+      btn.disabled = false;
+      btn.innerText = `✨ Fix All (${vulnerabilities.length})`;
+    }
+  }
+
+  function runScan() {
+    const scanBtn = document.getElementById('scanBtn');
+    const statusDiv = document.getElementById('scanStatus');
+    const vulnCountDiv = document.getElementById('vulnCount');
+    
+    scanBtn.classList.add('scanning');
+    scanBtn.disabled = true;
+    scanBtn.innerText = '⟳ Scanning...';
+    
+    // Simulate scan delay
+    setTimeout(() => {
+      currentLines = currentCode.split('\n');
+      vulnerabilities = detectVulnerabilities(currentLines);
+      
+      renderCode();
+      updateGlobalFixButton();
+      
+      scanBtn.classList.remove('scanning');
+      scanBtn.disabled = false;
+      scanBtn.innerText = '✓ Rescan';
+      
+      statusDiv.style.display = 'block';
+      vulnCountDiv.innerText = `${vulnerabilities.length} vulnerabilities found`;
+      
+      // Update status dot
+      document.querySelector('.status-dot').classList.remove('scanning');
+    }, 800);
+  }
+
+  function selectFile(elem, file) {
+    document.querySelectorAll('.file-item').forEach(e => e.classList.remove('active'));
+    elem.classList.add('active');
+  }
+
+  // INITIALIZE
+  function init() {
+    currentLines = currentCode.split('\n');
+    vulnerabilities = [];
+    renderCode();
+    updateGlobalFixButton();
+  }
+
+  init();
+</script>
+
+</body>
+</html>
